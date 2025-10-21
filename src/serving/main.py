@@ -165,4 +165,4 @@ prediction_service = PredictionService.bind(
 )
 entrypoint = APIIngress.bind(feature_service, prediction_service)
 
-serve.start(http_options={"host": "0.0.0.0", "port": 8000})
+serve.run(entrypoint, host="0.0.0.0", port=8000)

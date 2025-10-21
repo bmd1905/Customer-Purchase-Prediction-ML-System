@@ -27,7 +27,7 @@ def get_job_class(job_name: str) -> Type[FlinkJob]:
     jobs = get_available_jobs()
     if job_name not in jobs:
         raise ValueError(f"Unknown job: {job_name}")
-    return jobs[job_name]()
+    return jobs[job_name]
 
 
 def main():
