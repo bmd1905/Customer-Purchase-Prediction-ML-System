@@ -7,6 +7,7 @@ import pandas as pd
 from dotenv import load_dotenv
 from kafka import KafkaAdminClient, KafkaProducer
 from kafka.admin import NewTopic
+from loguru import logger
 from schema_registry.client import SchemaRegistryClient, schema
 
 load_dotenv()
@@ -57,9 +58,8 @@ def create_topic(admin, topic_name):
         topic = NewTopic(name=topic_name, num_partitions=12, replication_factor=1)
         admin.create_topics([topic])
         print(f"A new topic {topic_name} has been created!")
-    except Exception:
-        print(f"Topic {topic_name} already exists. Skipping creation!")
-        pass
+    except Exception as e:
+       logger.warning(f"Topic creation failed (may already exist): {e}")
 
 
 def create_streams(servers, avro_schemas_path, schema_registry_client):

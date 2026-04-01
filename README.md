@@ -1,57 +1,48 @@
-# 🚀 Customer Purchase Prediction ML System
+# Customer Purchase Prediction ML System
 
-A MLOps pipeline that transforms e-commerce behavior data into real-time purchase predictions. Built on modern open-source technologies including Kafka, Flink, Spark, Ray, and MLflow, this project demonstrates a complete ML lifecycle from data ingestion through model deployment. The system features automated CDC, multi-layer data warehousing, real-time feature serving, and comprehensive observability.
+A production-grade MLOps platform for real-time customer purchase prediction. This system demonstrates a complete machine learning lifecycle—from data ingestion and feature engineering through model training and serving—using modern open-source technologies including Kafka, Apache Flink, Spark, Ray, and MLflow. The architecture features automated change data capture (CDC), multi-layer data warehousing, real-time feature serving, and comprehensive observability infrastructure.
 
 ![Architecture](./docs/pipeline.png)
 
-## 📑 Table of Contents
+## Table of Contents
 
-- [📊 Dataset](#-dataset)
+- [Dataset](#dataset)
   - [File Structure](#file-structure)
   - [Event Types](#event-types)
   - [Modeling: Customer Purchase Prediction](#modeling-customer-purchase-prediction)
-- [🌐 Architecture Overview](#-architecture-overview)
+- [Architecture Overview](#architecture-overview)
   - [1. Data Pipeline](#1-data-pipeline)
-    - [📤 Data Sources](#-data-sources)
-    - [✅ Schema Validation](#-schema-validation)
-    - [☁️ Storage Layer](#-storage-layer)
-    - [🛒 Spark Streaming](#-spark-streaming)
+    - [Data Sources](#data-sources)
+    - [Schema Validation](#schema-validation)
+    - [Storage Layer](#storage-layer)
+    - [Spark Streaming](#spark-streaming)
   - [2. Training Pipeline](#2-training-pipeline)
-    - [🌟 Distributed Training](#-distributed-training)
-    - [📦 Model Management](#-model-management)
+    - [Distributed Training](#distributed-training)
+    - [Model Management](#model-management)
   - [3. Serving Pipeline](#3-serving-pipeline)
-    - [⚡ Model Serving](#-model-serving)
-    - [🔍 Feature Service](#-feature-service)
+    - [Model Serving](#model-serving)
+    - [Feature Service](#feature-service)
   - [4. Observability](#4-observability)
-    - [📡 Metrics & Monitoring](#-metrics--monitoring)
-    - [🔒 Access Management](#-access-management)
-- [📖 Details](#-details)
-  - [🔧 Setup Environment Variables](#-setup-environment-variables)
-  - [🏁 Start Data Pipeline](#-start-data-pipeline)
-  - [✅ Start Schema Validation Job](#-start-schema-validation-job)
-  - [☁️ Start Data Lake](#-start-data-lake)
-  - [🔄 Start Orchestration](#-start-orchestration)
-  - [Data and Training Pipeline](#data-and-training-pipeline)
-    - [🔄 Data Pipeline](#-data-pipeline-1)
-    - [🤼‍♂️ Training Pipeline](#-training-pipeline-1)
-    - [📦 Start Online Store](#-start-online-store)
-  - [🚀 Start Serving Pipeline](#-start-serving-pipeline)
-  - [🔎 Start Observability](#-start-observability)
-    - [📈 SigNoz](#-signoz)
-    - [📉 Prometheus and Grafana](#-prometheus-and-grafana)
-  - [🔒 NGINX](#-nginx)
+    - [Metrics and Monitoring](#metrics-and-monitoring)
+    - [Access Management](#access-management)
+- [Deployment Guide](#deployment-guide)
+  - [Environment Setup](#environment-setup)
+  - [Data Pipeline](#data-pipeline)
+  - [Schema Validation](#schema-validation)
+  - [Data Lake](#data-lake)
+  - [Orchestration](#orchestration)
+  - [Model Training](#model-training)
+  - [Online Store](#online-store)
+  - [Serving Pipeline](#serving-pipeline)
+  - [Observability Stack](#observability-stack)
 - [Contributing](#contributing)
-- [📃 License](#-license)
+- [License](#license)
 
-## 📊 Dataset
+## Dataset
 
-> eCommerce Behavior Data from Multi Category Store
+This project uses the eCommerce Behavior Data from Multi-Category Store dataset, available on [Kaggle](https://www.kaggle.com/datasets/mkechinov/ecommerce-behavior-data-from-multi-category-store/data). The dataset contains over 285 million user interaction events collected from a large multi-category e-commerce platform.
 
-The dataset can be found [here](https://www.kaggle.com/datasets/mkechinov/ecommerce-behavior-data-from-multi-category-store/data). This dataset contains behavior data from over 285 million user events on a large multi-category eCommerce website.
-
-The data spans 7 months (October 2019 to April 2020) and captures user-product interactions like views, cart additions/removals, and purchases. Each event represents a many-to-many relationship between users and products.
-
-The dataset was collected by the Open CDP project, an open source customer data platform that enables tracking and analysis of user behavior data.
+The dataset spans seven months (October 2019 to April 2020) and captures user-product interactions including views, cart additions, cart removals, and purchases. Each event represents a user-product interaction in a many-to-many relationship. The data was collected by the Open CDP project, an open-source customer data platform.
 
 ### File Structure
 
@@ -98,9 +89,9 @@ Key engineered features include:
 
 You can download the dataset and put it under the `data` folder.
 
-## 🌐 Architecture Overview
+## Architecture Overview
 
-The system comprises four main components—**Data**, **Training**, **Serving**, and **Observability**—alongside a **Dev Environment** and a **Model Registry**.
+The system comprises four core components: Data Pipeline, Training Pipeline, Serving Pipeline, and Observability Stack, supported by a development environment and centralized model registry.
 
 ### 1. Data Pipeline
 
@@ -109,61 +100,60 @@ The system comprises four main components—**Data**, **Training**, **Serving**,
 - **Kafka Producer**: Continuously emits user behavior events to `tracking.raw_user_behavior` topic
 - **CDC Service**: Uses Debezium to capture PostgreSQL changes, streaming to `tracking_postgres_cdc.public.events`
 
-#### ✅ Schema Validation
+#### Schema Validation
 
 - Validates incoming events from both sources
 - Routes events to:
   - `tracking.user_behavior.validated` for valid events
   - `tracking.user_behavior.invalid` for schema violations
-- Handles ~10k events/second
-- Alerts invalid events to Elasticsearch
+- Handles approximately 10,000 events per second
+- Forwards invalid events to Elasticsearch for alerting
 
-#### ☁️ Storage Layer
+#### Storage Layer
 
 - **Data Lake (MinIO)**:
-  - External Storage
   - Stores data in time-partitioned buckets (year/month/day/hour)
   - Supports checkpointing for pipeline resilience
 - **Data Warehouse (PostgreSQL)**:
-  - Organized in bronze → silver → gold layers
-  - Houses dimension/fact tables for analysis purposes
+  - Organized in bronze, silver, and gold layers
+  - Houses dimension and fact tables for analytical queries
 - **Offline Store (PostgreSQL)**:
-  - Used for training and batch feature serving
+  - Supports training and batch feature serving
   - Periodically materialized to online store
 - **Online Store (Redis)**:
-  - Low-latency feature serving
+  - Low-latency feature serving for real-time predictions
   - Updated through streaming pipeline
   - Exposed via Feature Retrieval API
 
-#### 🛒 Spark Streaming
+#### Spark Streaming
 
 - Transforms validated events into ML features
 - Focuses on session-based metrics and purchase behavior
-- Dual-writes to online/offline stores
+- Dual-writes to online and offline stores
 
 ### 2. Training Pipeline
 
-#### 🌟 Distributed Training
+#### Distributed Training
 
 - **Ray Cluster**:
   - Handles distributed hyperparameter tuning via Ray Tune
   - Executes final model training
   - Integrates with MLflow for experiment tracking
 
-#### 📦 Model Management
+#### Model Management
 
-- **MLflow + MinIO + PostgreSQL**:
+- **MLflow with MinIO and PostgreSQL**:
   - Tracks experiments, parameters, and metrics
   - Versions model artifacts
-  - Provides model registry UI at `localhost:5001`
+  - Provides model registry UI at `http://localhost:5001`
 
 ### 3. Serving Pipeline
 
-#### ⚡ Model Serving
+#### Model Serving
 
 - **Ray Serve**:
   - Loads models from MLflow registry
-  - Automatically scales horizontally for high throughput
+  - Scales horizontally for high throughput
   - Provides REST API for predictions
 - **Feature Service**:
   - FastAPI endpoint for feature retrieval
@@ -171,45 +161,43 @@ The system comprises four main components—**Data**, **Training**, **Serving**,
 
 ### 4. Observability
 
-#### 📡 Metrics & Monitoring
+#### Metrics and Monitoring
 
 - **SigNoz**:
   - Collects OpenTelemetry data
   - Provides service-level monitoring
-  - Accessible at `localhost:3301`
+  - Accessible at `http://localhost:3301`
 - **Ray Dashboard**:
-  - Monitors training/serving jobs
-  - Available at `localhost:8265`
-- **Prometheus + Grafana**:
+  - Monitors training and serving jobs
+  - Available at `http://localhost:8265`
+- **Prometheus and Grafana**:
   - Tracks Ray cluster metrics
   - Visualizes system performance
-  - Accessible at `localhost:3009`
+  - Accessible at `http://localhost:3009`
 - **Superset**:
-  - Visualize the data in the Data Warehouse
-  - Accessible at `localhost:8089`
+  - Visualizes data in the Data Warehouse
+  - Accessible at `http://localhost:8089`
 - **Elasticsearch**:
-  - Alert invalid events
+  - Aggregates invalid events for alerting
 
-#### 🔒 Access Management
+#### Access Management
 
 - **NGINX Proxy Manager**:
   - Reverse proxy for all services
   - SSL/TLS termination
   - Access control and routing
 
-The architecture prioritizes reliability, scalability, and observability while maintaining clear separation of concerns between pipeline stages. Each component is containerized and can be deployed independently using Docker Compose.
+The architecture prioritizes reliability, scalability, and observability through clear separation of concerns. All components are containerized for independent deployment using Docker Compose.
 
 ---
 
-## 📖 Details
+## Deployment Guide
 
-All available commands can be found in the `Makefile`.
+All deployment commands are available in the `Makefile`. This section provides step-by-step instructions for running the system components.
 
-In this section, we will dive into the details of the system.
+### Environment Setup
 
-### 🔧 Setup Environment Variables
-
-Please run the following command to setup the `.env` files:
+Initialize environment variables by copying the example files:
 
 ```bash
 cp .env.example .env
@@ -220,31 +208,25 @@ cp ./src/producer/.env.example ./src/producer/.env
 cp ./src/streaming/.env.example ./src/streaming/.env
 ```
 
-**Note**: I don't use any secrets in this project, so run the above command and you are good to go.
+Note: This project does not require secrets management for local development.
 
-### 🏁 Start Data Pipeline
+### Data Pipeline
 
-I will use the same network for all the services, first we need to create the network.
+Firstly, create the Docker network for all services:
 
 ```bash
 make up-network
 ```
 
-#### 🐟 Start Kafka
+#### Kafka Setup
+
+Start the Kafka broker and producer:
 
 ```bash
 make up-kafka
 ```
 
-The last service in the `docker-compose.kafka.yaml` file is `kafka_producer`, this service acts as a producer and will start sending messages to the `tracking.raw_user_behavior` topic.
-
-To check if Kafka is running, you can go to `localhost:9021` and you should see the Kafka dashboard. Then go to the `Topics` tab and you should see `tracking.raw_user_behavior` topic.
-
-![Kafka Topics](./docs/images/kafka-topic.jpg)
-
-To check if the producer is sending messages, you can click on the `tracking.raw_user_behavior` topic and you should see the messages being sent.
-
-![Kafka Messages](./docs/images/kafka-message.jpg)
+Verify Kafka is running by accessing the Control Center at `http://localhost:9021`. Navigate to the Topics tab to verify the `tracking.raw_user_behavior` topic is created and receiving messages.
 
 Here is an example of the message's value in the `tracking.raw_user_behavior` topic:
 
