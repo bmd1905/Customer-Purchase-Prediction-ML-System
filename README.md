@@ -585,7 +585,9 @@ Key configuration options include:
 
 ## Contributing
 
-This project is open to contributions. Please feel free to submit a PR.
+## 📝 Notes
+
+Updated documentation for clarity and streamlined setup instructions.
 
 ## 📃 License
 
